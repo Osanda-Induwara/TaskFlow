@@ -1,0 +1,17 @@
+{
+  "name": "taskflow",
+  "version": "1.0.0",
+  "description": "TaskFlow - Full-Stack Task Management System",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && npm install --legacy-peer-deps && cd ../backend && npm install && cd ..",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "install-all": "npm run dev",
+    "build": "cd frontend && npm run build && cd ../backend && npm install"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  }
+}
