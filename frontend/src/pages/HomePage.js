@@ -1,11 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Sidebar from '../components/Sidebar';
 import '../styles/HomePage.css';
 
 function HomePage({ user, onLogout }) {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
   const featuresRef = useRef(null);
 
   const scrollToFeatures = () => {
@@ -16,31 +14,10 @@ function HomePage({ user, onLogout }) {
     onLogout();
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-  };
-
   return (
     <div className="page-layout">
       <header className="header">
         <h1>TaskFlow</h1>
-        <form className="search-form" onSubmit={handleSearch}>
-          <div className="search-input-wrapper">
-            <input
-              type="text"
-              className="search-bar"
-              placeholder="Search tasks..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <button type="submit" className="search-btn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"></circle>
-                <path d="m21 21-4.35-4.35"></path>
-              </svg>
-            </button>
-          </div>
-        </form>
         <div className="auth-buttons">
           {user ? (
             <>
