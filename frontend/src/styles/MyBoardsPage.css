@@ -1,7 +1,9 @@
 .boards-container {
+  flex: 1;
   padding: 40px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  min-height: 100%;
+  overflow-y: auto;
+  width: 100%;
 }
 
 .boards-header {
@@ -100,8 +102,9 @@
 
 .boards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 28px;
+  width: 100%;
 }
 
 .board-card {

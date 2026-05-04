@@ -12,6 +12,7 @@ function MyBoardsPage({ user, onLogout }) {
   const [showNewBoardForm, setShowNewBoardForm] = useState(false);
   const [newBoardTitle, setNewBoardTitle] = useState('');
   const [newBoardDescription, setNewBoardDescription] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchBoards();
@@ -81,6 +82,16 @@ function MyBoardsPage({ user, onLogout }) {
     navigate('/');
   };
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    // Search is handled by filtering the displayed boards
+  };
+
+  const filteredBoards = boards.filter(board =>
+    board.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    board.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) {
     return <div className="loading">Loading boards...</div>;
   }
@@ -90,9 +101,15 @@ function MyBoardsPage({ user, onLogout }) {
       <header className="header">
         <h1>TaskFlow</h1>
         <div className="header-content">
-          <form className="search-form">
+          <form className="search-form" onSubmit={handleSearchSubmit}>
             <div className="search-input-wrapper">
-              <input type="text" className="search-bar" placeholder="Search boards..." />
+              <input
+                type="text"
+                className="search-bar"
+                placeholder="Search boards..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
               <button type="submit" className="search-btn">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="8"></circle>
@@ -162,12 +179,12 @@ function MyBoardsPage({ user, onLogout }) {
           )}
 
           <div className="boards-grid">
-            {boards.length === 0 ? (
+            {filteredBoards.length === 0 ? (
               <div className="no-boards">
-                <p>📋 No boards yet. Create one to get started.</p>
+                <p>📋 {searchTerm ? 'No boards match your search.' : 'No boards yet. Create one to get started.'}</p>
               </div>
             ) : (
-              boards.map(board => (
+              filteredBoards.map(board => (
                 <div key={board._id} className="board-card">
                   <h3>{board.title}</h3>
                   <p>{board.description}</p>

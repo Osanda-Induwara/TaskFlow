@@ -16,6 +16,7 @@ function BoardPage({ user, onLogout }) {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [ws, setWs] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchBoard();
@@ -226,6 +227,18 @@ function BoardPage({ user, onLogout }) {
     navigate('/');
   };
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    // Search is handled by filtering the displayed tasks
+  };
+
+  const filterTasksBySearch = (taskList) => {
+    return taskList.filter(task =>
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  };
+
   if (loading) {
     return <div className="loading">Loading board...</div>;
   }
@@ -235,9 +248,15 @@ function BoardPage({ user, onLogout }) {
       <header className="header">
         <h1>TaskFlow - {board?.title}</h1>
         <div className="header-content">
-          <form className="search-form">
+          <form className="search-form" onSubmit={handleSearchSubmit}>
             <div className="search-input-wrapper">
-              <input type="text" className="search-bar" placeholder="Search tasks..." />
+              <input
+                type="text"
+                className="search-bar"
+                placeholder="Search tasks..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
               <button type="submit" className="search-btn">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="8"></circle>
@@ -280,7 +299,7 @@ function BoardPage({ user, onLogout }) {
                   <div className="column-header">
                     <h3>
                       {status === 'todo' ? '📝 To Do' : status === 'ongoing' ? '⏳ In Progress' : '✅ Done'}
-                      <span className="task-count">{tasks[status]?.length || 0}</span>
+                      <span className="task-count">{(tasks[status] || []).length}</span>
                     </h3>
                     <button
                       className="btn btn-small"
@@ -290,58 +309,72 @@ function BoardPage({ user, onLogout }) {
                     </button>
                   </div>
 
-                  <Droppable droppableId={String(status)} type="TASK">
+                  <Droppable droppableId={status}>
                     {(provided, snapshot) => (
                       <div
                         {...provided.droppableProps}
                         ref={provided.innerRef}
                         className={`task-list ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
                       >
-                        {(tasks[status] || []).map((task, index) => (
-                          <Draggable key={task._id} draggableId={String(task._id)} type="TASK" index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className={`task-card ${snapshot.isDragging ? 'dragging' : ''}`}
-                              >
-                                <div className="task-content">
-                                  <h4>{task.title}</h4>
-                                  <p>{task.description}</p>
-                                </div>
-                                <div className="task-meta">
-                                  {task.dueDate && (
-                                    <div className="task-due-date">
-                                      📅 {new Date(task.dueDate).toLocaleDateString()}
-                                    </div>
-                                  )}
-                                  {task.priority && (
-                                    <div className={`task-priority priority-${task.priority}`}>
-                                      {task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟡' : '🟢'} {task.priority}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="task-actions">
-                                  <button
-                                    className="btn-edit"
-                                    title="Edit task"
-                                    onClick={() => handleEditTask(task)}
+                        {(tasks[status] || []).length === 0 ? (
+                          <div className="no-tasks-message">No tasks</div>
+                        ) : (
+                          (tasks[status] || []).map((task, index) => {
+                            // Filter based on search term
+                            const matchesSearch = !searchTerm || task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              task.description.toLowerCase().includes(searchTerm.toLowerCase());
+                            
+                            if (!matchesSearch) {
+                              return null;
+                            }
+
+                            return (
+                              <Draggable key={task._id} draggableId={String(task._id)} index={index}>
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    className={`task-card ${snapshot.isDragging ? 'dragging' : ''}`}
                                   >
-                                    ✎
-                                  </button>
-                                  <button
-                                    className="btn-delete"
-                                    title="Delete task"
-                                    onClick={() => handleDeleteTask(task._id)}
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
+                                    <div className="task-content">
+                                      <h4>{task.title}</h4>
+                                      <p>{task.description}</p>
+                                    </div>
+                                    <div className="task-meta">
+                                      {task.dueDate && (
+                                        <div className="task-due-date">
+                                          📅 {new Date(task.dueDate).toLocaleDateString()}
+                                        </div>
+                                      )}
+                                      {task.priority && (
+                                        <div className={`task-priority priority-${task.priority}`}>
+                                          {task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟡' : '🟢'} {task.priority}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="task-actions">
+                                      <button
+                                        className="btn-edit"
+                                        title="Edit task"
+                                        onClick={() => handleEditTask(task)}
+                                      >
+                                        ✎
+                                      </button>
+                                      <button
+                                        className="btn-delete"
+                                        title="Delete task"
+                                        onClick={() => handleDeleteTask(task._id)}
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </Draggable>
+                            );
+                          })
+                        )}
                         {provided.placeholder}
                       </div>
                     )}
