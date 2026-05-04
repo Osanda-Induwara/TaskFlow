@@ -9,6 +9,7 @@ function CalendarPage({ user, onLogout }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchAllTasks();
@@ -42,6 +43,16 @@ function CalendarPage({ user, onLogout }) {
     navigate('/');
   };
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    // Search is handled by filtering the displayed tasks
+  };
+
+  const filteredTasks = tasks.filter(task =>
+    task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    task.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const getDaysInMonth = (date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
@@ -66,7 +77,7 @@ function CalendarPage({ user, onLogout }) {
                       date.getMonth() === today.getMonth() &&
                       date.getFullYear() === today.getFullYear();
       
-      const dayTasks = tasks.filter(task => {
+      const dayTasks = filteredTasks.filter(task => {
         if (!task.dueDate) return false;
         const taskDate = new Date(task.dueDate);
         return (
@@ -108,9 +119,15 @@ function CalendarPage({ user, onLogout }) {
       <header className="header">
         <h1>TaskFlow - Calendar</h1>
         <div className="header-content">
-          <form className="search-form">
+          <form className="search-form" onSubmit={handleSearchSubmit}>
             <div className="search-input-wrapper">
-              <input type="text" className="search-bar" placeholder="Search tasks..." />
+              <input
+                type="text"
+                className="search-bar"
+                placeholder="Search tasks..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
               <button type="submit" className="search-btn">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="8"></circle>
