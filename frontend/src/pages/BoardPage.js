@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DndContext, PointerSensor, closestCenter, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 import TaskModal from '../components/TaskModal';
@@ -17,6 +19,8 @@ function BoardPage({ user, onLogout }) {
   const [selectedTask, setSelectedTask] = useState(null);
   const [ws, setWs] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const sensors = useSensors(useSensor(PointerSensor));
+  const statuses = useMemo(() => ['todo', 'ongoing', 'done'], []);
 
   useEffect(() => {
     fetchBoard();
@@ -114,45 +118,63 @@ function BoardPage({ user, onLogout }) {
     });
   };
 
-  const handleDragEnd = async (result) => {
-    const { source, destination, draggableId } = result;
-
-    if (!destination) return;
-
-    if (
-      source.droppableId === destination.droppableId &&
-      source.index === destination.index
-    ) {
-      return;
+  const findStatusByTaskId = (taskId) => {
+    for (const status of statuses) {
+      if ((tasks[status] || []).some(t => String(t._id) === String(taskId))) {
+        return status;
+      }
     }
+    return null;
+  };
 
-    const sourceStatus = source.droppableId;
-    const destStatus = destination.droppableId;
-    const taskId = draggableId;
+  const getTaskIndex = (status, taskId) => {
+    return (tasks[status] || []).findIndex(t => String(t._id) === String(taskId));
+  };
 
-    // Ensure source and destination exist in tasks
-    if (!tasks[sourceStatus] || !tasks[destStatus]) {
-      console.error('Invalid source or destination status');
-      return;
-    }
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
 
-    const newTasks = { ...tasks };
-    const task = newTasks[sourceStatus][source.index];
+    if (!over) return;
 
-    if (!task) {
-      console.error('Task not found at index');
-      return;
-    }
+    const activeId = String(active.id);
+    const overId = String(over.id);
 
-    newTasks[sourceStatus].splice(source.index, 1);
-    newTasks[destStatus].splice(destination.index, 0, task);
+    if (activeId === overId) return;
+
+    const sourceStatus = findStatusByTaskId(activeId);
+    const destStatus = overId.startsWith('column-')
+      ? overId.replace('column-', '')
+      : findStatusByTaskId(overId);
+
+    if (!sourceStatus || !destStatus) return;
+
+    const sourceIndex = getTaskIndex(sourceStatus, activeId);
+    if (sourceIndex === -1) return;
+
+    const destIndex = overId.startsWith('column-')
+      ? (tasks[destStatus] || []).length
+      : getTaskIndex(destStatus, overId);
+
+    const newTasks = {
+      ...tasks,
+      [sourceStatus]: [...(tasks[sourceStatus] || [])],
+      [destStatus]: [...(tasks[destStatus] || [])]
+    };
+
+    const [movedTask] = newTasks[sourceStatus].splice(sourceIndex, 1);
+    if (!movedTask) return;
+
+    const insertIndex = destIndex === -1 ? newTasks[destStatus].length : destIndex;
+    newTasks[destStatus].splice(insertIndex, 0, movedTask);
 
     setTasks(newTasks);
+
+    if (sourceStatus === destStatus) return;
 
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `/api/tasks/${taskId}`,
+        `/api/tasks/${activeId}`,
         { status: destStatus },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -163,7 +185,7 @@ function BoardPage({ user, onLogout }) {
         ws.send(JSON.stringify({
           type: 'TASK_MOVED',
           boardId,
-          payload: { taskId, newStatus: destStatus }
+          payload: { taskId: activeId, newStatus: destStatus }
         }));
       }
     } catch (err) {
@@ -243,6 +265,78 @@ function BoardPage({ user, onLogout }) {
     return <div className="loading">Loading board...</div>;
   }
 
+  const SortableTask = ({ task, hidden }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging
+    } = useSortable({ id: String(task._id) });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className={`task-card ${isDragging ? 'dragging' : ''} ${hidden ? 'hidden-by-search' : ''}`}
+      >
+        <div className="task-content">
+          <h4>{task.title}</h4>
+          <p>{task.description}</p>
+        </div>
+        <div className="task-meta">
+          {task.dueDate && (
+            <div className="task-due-date">
+              📅 {new Date(task.dueDate).toLocaleDateString()}
+            </div>
+          )}
+          {task.priority && (
+            <div className={`task-priority priority-${task.priority}`}>
+              {task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟡' : '🟢'} {task.priority}
+            </div>
+          )}
+        </div>
+        <div className="task-actions">
+          <button
+            className="btn-edit"
+            title="Edit task"
+            onClick={() => handleEditTask(task)}
+          >
+            ✎
+          </button>
+          <button
+            className="btn-delete"
+            title="Delete task"
+            onClick={() => handleDeleteTask(task._id)}
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const ColumnDroppable = ({ status, children }) => {
+    const { isOver, setNodeRef } = useDroppable({ id: `column-${status}` });
+
+    return (
+      <div
+        ref={setNodeRef}
+        className={`task-list ${isOver ? 'dragging-over' : ''}`}
+      >
+        {children}
+      </div>
+    );
+  };
+
   return (
     <div className="page-layout">
       <header className="header">
@@ -292,9 +386,9 @@ function BoardPage({ user, onLogout }) {
             />
           )}
 
-          <DragDropContext onDragEnd={handleDragEnd}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <div className="board-columns">
-              {['todo', 'ongoing', 'done'].map(status => (
+              {statuses.map(status => (
                 <div key={status} className="column">
                   <div className="column-header">
                     <h3>
@@ -309,80 +403,33 @@ function BoardPage({ user, onLogout }) {
                     </button>
                   </div>
 
-                  <Droppable droppableId={status}>
-                    {(provided, snapshot) => (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className={`task-list ${snapshot.isDraggingOver ? 'dragging-over' : ''}`}
-                      >
-                        {(tasks[status] || []).length === 0 ? (
-                          <div className="no-tasks-message">No tasks</div>
-                        ) : (
-                          (tasks[status] || []).map((task, index) => {
-                            // Filter based on search term
-                            const matchesSearch = !searchTerm || task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              task.description.toLowerCase().includes(searchTerm.toLowerCase());
-                            
-                            if (!matchesSearch) {
-                              return null;
-                            }
+                  <SortableContext
+                    items={(tasks[status] || []).map(task => String(task._id))}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <ColumnDroppable status={status}>
+                      {(tasks[status] || []).length === 0 ? (
+                        <div className="no-tasks-message">No tasks</div>
+                      ) : (
+                        (tasks[status] || []).map((task) => {
+                          const matchesSearch = !searchTerm || task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            task.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-                            return (
-                              <Draggable key={task._id} draggableId={String(task._id)} index={index}>
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    className={`task-card ${snapshot.isDragging ? 'dragging' : ''}`}
-                                  >
-                                    <div className="task-content">
-                                      <h4>{task.title}</h4>
-                                      <p>{task.description}</p>
-                                    </div>
-                                    <div className="task-meta">
-                                      {task.dueDate && (
-                                        <div className="task-due-date">
-                                          📅 {new Date(task.dueDate).toLocaleDateString()}
-                                        </div>
-                                      )}
-                                      {task.priority && (
-                                        <div className={`task-priority priority-${task.priority}`}>
-                                          {task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟡' : '🟢'} {task.priority}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <div className="task-actions">
-                                      <button
-                                        className="btn-edit"
-                                        title="Edit task"
-                                        onClick={() => handleEditTask(task)}
-                                      >
-                                        ✎
-                                      </button>
-                                      <button
-                                        className="btn-delete"
-                                        title="Delete task"
-                                        onClick={() => handleDeleteTask(task._id)}
-                                      >
-                                        ✕
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
-                              </Draggable>
-                            );
-                          })
-                        )}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
+                          return (
+                            <SortableTask
+                              key={task._id}
+                              task={task}
+                              hidden={!matchesSearch}
+                            />
+                          );
+                        })
+                      )}
+                    </ColumnDroppable>
+                  </SortableContext>
                 </div>
               ))}
             </div>
-          </DragDropContext>
+          </DndContext>
         </div>
       </div>
     </div>
