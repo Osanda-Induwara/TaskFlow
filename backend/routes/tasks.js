@@ -23,6 +23,14 @@ router.post('/', authenticateToken, [
       return res.status(404).json({ message: 'Board not found' });
     }
 
+    // Check if user is the board owner or a member
+    if (
+      board.userId.toString() !== req.user.userId &&
+      !board.members.some((memberId) => memberId.toString() === req.user.userId)
+    ) {
+      return res.status(403).json({ message: 'You do not have permission to create tasks in this board' });
+    }
+
     const task = new Task({
       title,
       description,
@@ -35,18 +43,33 @@ router.post('/', authenticateToken, [
     await task.save();
     res.status(201).json(task);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    console.error('Error creating task:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
 router.get('/board/:boardId', authenticateToken, async (req, res) => {
   try {
+    const board = await Board.findById(req.params.boardId);
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
+    }
+
+    // Check if user is the board owner or a member
+    if (
+      board.userId.toString() !== req.user.userId &&
+      !board.members.some((memberId) => memberId.toString() === req.user.userId)
+    ) {
+      return res.status(403).json({ message: 'You do not have permission to view tasks in this board' });
+    }
+
     const tasks = await Task.find({ boardId: req.params.boardId })
       .populate('assignedTo', 'name email');
 
     res.json(tasks);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    console.error('Error fetching tasks:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -56,6 +79,20 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
+    }
+
+    // Verify user has access to the board this task belongs to
+    const board = await Board.findById(task.boardId);
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
+    }
+
+    // Check if user is the board owner or a member
+    if (
+      board.userId.toString() !== req.user.userId &&
+      !board.members.some((memberId) => memberId.toString() === req.user.userId)
+    ) {
+      return res.status(403).json({ message: 'You do not have permission to update this task' });
     }
 
     task.title = req.body.title || task.title;
@@ -69,7 +106,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
     await task.save();
     res.json(task);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    console.error('Error updating task:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -81,10 +119,25 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
+    // Verify user has access to the board this task belongs to
+    const board = await Board.findById(task.boardId);
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found' });
+    }
+
+    // Check if user is the board owner or a member
+    if (
+      board.userId.toString() !== req.user.userId &&
+      !board.members.some((memberId) => memberId.toString() === req.user.userId)
+    ) {
+      return res.status(403).json({ message: 'You do not have permission to delete this task' });
+    }
+
     await Task.findByIdAndDelete(req.params.id);
     res.json({ message: 'Task deleted' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    console.error('Error deleting task:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 

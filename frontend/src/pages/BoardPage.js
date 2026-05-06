@@ -214,7 +214,9 @@ function BoardPage({ user, onLogout }) {
         });
         fetchTasks();
       } catch (err) {
-        setError('Failed to delete task');
+        console.error('Delete task error:', err.response?.data || err.message);
+        const errorMessage = err.response?.data?.message || 'Failed to delete task';
+        setError(errorMessage);
       }
     }
   };
@@ -240,7 +242,9 @@ function BoardPage({ user, onLogout }) {
       fetchTasks();
       setShowTaskModal(false);
     } catch (err) {
-      setError('Failed to save task');
+      console.error('Save task error:', err.response?.data || err.message);
+      const errorMessage = err.response?.data?.message || 'Failed to save task';
+      setError(errorMessage);
     }
   };
 
@@ -259,6 +263,10 @@ function BoardPage({ user, onLogout }) {
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
+  };
+
+  const stopPropagation = (event) => {
+    event.stopPropagation();
   };
 
   if (loading) {
@@ -308,14 +316,22 @@ function BoardPage({ user, onLogout }) {
           <button
             className="btn-edit"
             title="Edit task"
-            onClick={() => handleEditTask(task)}
+            onPointerDown={stopPropagation}
+            onClick={(event) => {
+              stopPropagation(event);
+              handleEditTask(task);
+            }}
           >
             ✎
           </button>
           <button
             className="btn-delete"
             title="Delete task"
-            onClick={() => handleDeleteTask(task._id)}
+            onPointerDown={stopPropagation}
+            onClick={(event) => {
+              stopPropagation(event);
+              handleDeleteTask(task._id);
+            }}
           >
             ✕
           </button>
