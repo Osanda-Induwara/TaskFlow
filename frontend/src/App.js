@@ -5,8 +5,10 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import MyBoardsPage from './pages/MyBoardsPage';
+import SharedBoardsPage from './pages/SharedBoardsPage';
 import BoardPage from './pages/BoardPage';
 import CalendarPage from './pages/CalendarPage';
+import AcceptInvitePage from './pages/AcceptInvitePage';
 import './App.css';
 
 function App() {
@@ -67,8 +69,16 @@ function App() {
           element={user ? <MyBoardsPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
         />
         <Route 
+          path="/shared-boards" 
+          element={user ? <SharedBoardsPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+        />
+        <Route 
           path="/board/:id"
           element={user ? <BoardPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+        />
+        <Route
+          path="/accept-invite/:token"
+          element={<AcceptInvitePage user={user} />}
         />
         <Route 
           path="/calendar" 

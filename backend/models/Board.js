@@ -14,10 +14,19 @@ const boardSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  members: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
+  members: [
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      role: {
+        type: String,
+        enum: ['viewer', 'editor'],
+        default: 'viewer'
+      }
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now

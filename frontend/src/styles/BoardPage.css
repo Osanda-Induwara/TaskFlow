@@ -27,6 +27,115 @@
   letter-spacing: -0.5px;
 }
 
+.board-share-panel {
+  background-color: var(--white);
+  border: 1px solid var(--gray-light);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+.share-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.share-panel-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--dark);
+}
+
+.share-form {
+  display: grid;
+  grid-template-columns: 1fr 140px 160px;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.share-form input,
+.share-form select {
+  padding: 10px 12px;
+  border: 1.5px solid var(--gray-light);
+  border-radius: 10px;
+  font-size: 14px;
+  background-color: var(--gray-lighter);
+}
+
+.share-form input:focus,
+.share-form select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background-color: var(--white);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+}
+
+.member-list {
+  margin-top: 16px;
+}
+
+.member-list h4 {
+  margin: 0 0 12px 0;
+  color: var(--dark);
+  font-size: 16px;
+}
+
+.member-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background-color: var(--gray-lighter);
+  margin-bottom: 8px;
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.member-name {
+  font-weight: 600;
+  color: var(--dark);
+  font-size: 14px;
+}
+
+.member-email {
+  font-size: 12px;
+  color: var(--gray);
+}
+
+.member-row select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-light);
+  background-color: var(--white);
+  font-size: 13px;
+}
+
+.empty-members {
+  margin: 0;
+  color: var(--gray);
+  font-size: 13px;
+}
+
+.success-message {
+  background-color: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  border-left: 4px solid #10b981;
+}
+
 .board-columns {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

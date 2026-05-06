@@ -6,6 +6,20 @@ const authenticateToken = require('../middleware/auth');
 
 const router = express.Router();
 
+const getMemberRole = (board, userId) => {
+  const member = (board.members || []).find((entry) => {
+    if (!entry) return false;
+    if (entry.user) {
+      return entry.user.toString() === userId;
+    }
+    return entry.toString && entry.toString() === userId;
+  });
+
+  if (!member) return null;
+  if (member.role) return member.role;
+  return 'editor';
+};
+
 router.post('/', authenticateToken, [
   body('title').notEmpty().withMessage('Title is required'),
   body('boardId').notEmpty().withMessage('Board ID is required')
@@ -23,11 +37,11 @@ router.post('/', authenticateToken, [
       return res.status(404).json({ message: 'Board not found' });
     }
 
-    // Check if user is the board owner or a member
-    if (
-      board.userId.toString() !== req.user.userId &&
-      !board.members.some((memberId) => memberId.toString() === req.user.userId)
-    ) {
+    const isOwner = board.userId.toString() === req.user.userId;
+    const memberRole = getMemberRole(board, req.user.userId);
+    const canEdit = isOwner || memberRole === 'editor';
+
+    if (!canEdit) {
       return res.status(403).json({ message: 'You do not have permission to create tasks in this board' });
     }
 
@@ -55,11 +69,11 @@ router.get('/board/:boardId', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Board not found' });
     }
 
-    // Check if user is the board owner or a member
-    if (
-      board.userId.toString() !== req.user.userId &&
-      !board.members.some((memberId) => memberId.toString() === req.user.userId)
-    ) {
+    const isOwner = board.userId.toString() === req.user.userId;
+    const memberRole = getMemberRole(board, req.user.userId);
+    const canView = isOwner || memberRole === 'editor' || memberRole === 'viewer';
+
+    if (!canView) {
       return res.status(403).json({ message: 'You do not have permission to view tasks in this board' });
     }
 
@@ -87,11 +101,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Board not found' });
     }
 
-    // Check if user is the board owner or a member
-    if (
-      board.userId.toString() !== req.user.userId &&
-      !board.members.some((memberId) => memberId.toString() === req.user.userId)
-    ) {
+    const isOwner = board.userId.toString() === req.user.userId;
+    const memberRole = getMemberRole(board, req.user.userId);
+    const canEdit = isOwner || memberRole === 'editor';
+
+    if (!canEdit) {
       return res.status(403).json({ message: 'You do not have permission to update this task' });
     }
 
@@ -125,11 +139,11 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Board not found' });
     }
 
-    // Check if user is the board owner or a member
-    if (
-      board.userId.toString() !== req.user.userId &&
-      !board.members.some((memberId) => memberId.toString() === req.user.userId)
-    ) {
+    const isOwner = board.userId.toString() === req.user.userId;
+    const memberRole = getMemberRole(board, req.user.userId);
+    const canEdit = isOwner || memberRole === 'editor';
+
+    if (!canEdit) {
       return res.status(403).json({ message: 'You do not have permission to delete this task' });
     }
 

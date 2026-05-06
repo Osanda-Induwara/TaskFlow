@@ -28,6 +28,12 @@ function Sidebar({ user, onLogout, currentPage }) {
         My Boards
       </button>
       <button
+        className={`sidebar-item ${currentPage === 'shared-boards' ? 'active' : ''}`}
+        onClick={() => handleProtectedNavigation('/shared-boards')}
+      >
+        Shared Boards
+      </button>
+      <button
         className={`sidebar-item ${currentPage === 'calendar' ? 'active' : ''}`}
         onClick={() => handleProtectedNavigation('/calendar')}
       >
