@@ -20,12 +20,6 @@ function BoardPage({ user, onLogout }) {
   const [ws, setWs] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentRole, setCurrentRole] = useState('viewer');
-  const [members, setMembers] = useState([]);
-  const [showInviteForm, setShowInviteForm] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState('viewer');
-  const [inviteError, setInviteError] = useState('');
-  const [inviteSuccess, setInviteSuccess] = useState('');
   const sensors = useSensors(useSensor(PointerSensor));
   const statuses = useMemo(() => ['todo', 'ongoing', 'done'], []);
 
@@ -73,7 +67,6 @@ function BoardPage({ user, onLogout }) {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBoard(response.data);
-      setMembers(Array.isArray(response.data.members) ? response.data.members : []);
       setCurrentRole(response.data.currentUserRole || 'viewer');
     } catch (err) {
       setError('Failed to fetch board');
@@ -258,60 +251,6 @@ function BoardPage({ user, onLogout }) {
     }
   };
 
-  const handleInviteSubmit = async (event) => {
-    event.preventDefault();
-    setInviteError('');
-    setInviteSuccess('');
-
-    if (!inviteEmail.trim()) {
-      setInviteError('Email is required');
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        '/api/invites',
-        {
-          boardId,
-          email: inviteEmail,
-          role: inviteRole
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-      setInviteEmail('');
-      setInviteRole('viewer');
-      setInviteSuccess('Invite sent');
-    } catch (err) {
-      setInviteError(err.response?.data?.message || 'Failed to send invite');
-    }
-  };
-
-  const handleRoleChange = async (memberId, role) => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `/api/boards/${boardId}/members/${memberId}`,
-        { role },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      setMembers((prev) =>
-        prev.map((member) => {
-          const currentId = member.user?._id || member.user || member._id;
-          if (String(currentId) !== String(memberId)) return member;
-          return { ...member, role };
-        })
-      );
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update role');
-    }
-  };
-
   const handleLogout = () => {
     onLogout();
     navigate('/');
@@ -462,76 +401,6 @@ function BoardPage({ user, onLogout }) {
           </div>
 
           {error && <div className="error-message">{error}</div>}
-
-          {isOwner && (
-            <div className="board-share-panel">
-              <div className="share-panel-header">
-                <h3>Share Board</h3>
-                <button
-                  className="btn btn-small"
-                  onClick={() => setShowInviteForm(!showInviteForm)}
-                >
-                  {showInviteForm ? 'Hide' : 'Invite'}
-                </button>
-              </div>
-
-              {showInviteForm && (
-                <form className="share-form" onSubmit={handleInviteSubmit}>
-                  <input
-                    type="email"
-                    placeholder="Invitee email"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    required
-                  />
-                  <select
-                    value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value)}
-                  >
-                    <option value="viewer">Viewer</option>
-                    <option value="editor">Editor</option>
-                  </select>
-                  <button type="submit" className="btn btn-primary">
-                    Send Invite
-                  </button>
-                </form>
-              )}
-
-              {inviteError && <div className="error-message">{inviteError}</div>}
-              {inviteSuccess && <div className="success-message">{inviteSuccess}</div>}
-
-              <div className="member-list">
-                <h4>Members</h4>
-                {(members || []).length === 0 ? (
-                  <p className="empty-members">No members yet</p>
-                ) : (
-                  (members || []).map((member) => {
-                    const memberUser = member.user || {};
-                    const memberId = memberUser._id || member.user || member._id;
-                    const memberName = memberUser.name || 'Member';
-                    const memberEmail = memberUser.email || '';
-                    const memberRole = member.role || 'editor';
-
-                    return (
-                      <div key={memberId} className="member-row">
-                        <div className="member-info">
-                          <span className="member-name">{memberName}</span>
-                          {memberEmail && <span className="member-email">{memberEmail}</span>}
-                        </div>
-                        <select
-                          value={memberRole}
-                          onChange={(e) => handleRoleChange(memberId, e.target.value)}
-                        >
-                          <option value="viewer">Viewer</option>
-                          <option value="editor">Editor</option>
-                        </select>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          )}
 
           {showTaskModal && (
             <TaskModal

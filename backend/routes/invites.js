@@ -9,6 +9,13 @@ const { sendInviteEmail } = require('../utils/emailService');
 
 const router = express.Router();
 
+const getIdValue = (value) => {
+  if (!value) return null;
+  if (value._id) return value._id.toString();
+  if (value.toString) return value.toString();
+  return String(value);
+};
+
 const getMemberRole = (board, userId) => {
   const member = (board.members || []).find((entry) => {
     if (!entry) return false;
@@ -45,7 +52,8 @@ router.post(
         return res.status(404).json({ message: 'Board not found' });
       }
 
-      if (board.userId.toString() !== req.user.userId) {
+      const ownerId = getIdValue(board.userId);
+      if (ownerId !== req.user.userId) {
         return res.status(403).json({ message: 'Only the board owner can send invites' });
       }
 

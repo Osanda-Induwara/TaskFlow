@@ -5,6 +5,13 @@ const authenticateToken = require('../middleware/auth');
 
 const router = express.Router();
 
+const getIdValue = (value) => {
+  if (!value) return null;
+  if (value._id) return value._id.toString();
+  if (value.toString) return value.toString();
+  return String(value);
+};
+
 router.post('/', authenticateToken, [
   body('title').notEmpty().withMessage('Title is required'),
   body('description').optional()
@@ -68,13 +75,12 @@ router.get('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Board not found' });
     }
 
-    const isOwner = board.userId.toString() === req.user.userId;
+    const ownerId = getIdValue(board.userId);
+    const isOwner = ownerId === req.user.userId;
     const isMember = (board.members || []).some((entry) => {
       if (!entry) return false;
-      if (entry.user) {
-        return entry.user.toString() === req.user.userId;
-      }
-      return entry.toString && entry.toString() === req.user.userId;
+      const memberId = getIdValue(entry.user || entry);
+      return memberId === req.user.userId;
     });
 
     if (!isOwner && !isMember) {
@@ -87,10 +93,8 @@ router.get('/:id', authenticateToken, async (req, res) => {
     } else {
       const member = (board.members || []).find((entry) => {
         if (!entry) return false;
-        if (entry.user) {
-          return entry.user.toString() === req.user.userId;
-        }
-        return entry.toString && entry.toString() === req.user.userId;
+        const memberId = getIdValue(entry.user || entry);
+        return memberId === req.user.userId;
       });
       currentUserRole = member && member.role ? member.role : 'editor';
     }
@@ -113,16 +117,15 @@ router.put('/:id/members/:memberId', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Board not found' });
     }
 
-    if (board.userId.toString() !== req.user.userId) {
+    const ownerId = getIdValue(board.userId);
+    if (ownerId !== req.user.userId) {
       return res.status(403).json({ message: 'Only the board owner can update roles' });
     }
 
     const memberIndex = (board.members || []).findIndex((entry) => {
       if (!entry) return false;
-      if (entry.user) {
-        return entry.user.toString() === req.params.memberId;
-      }
-      return entry.toString && entry.toString() === req.params.memberId;
+      const memberId = getIdValue(entry.user || entry);
+      return memberId === req.params.memberId;
     });
 
     if (memberIndex === -1) {
@@ -152,7 +155,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Board not found' });
     }
 
-    if (board.userId.toString() !== req.user.userId) {
+    const ownerId = getIdValue(board.userId);
+    if (ownerId !== req.user.userId) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
@@ -175,7 +179,8 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Board not found' });
     }
 
-    if (board.userId.toString() !== req.user.userId) {
+    const ownerId = getIdValue(board.userId);
+    if (ownerId !== req.user.userId) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 

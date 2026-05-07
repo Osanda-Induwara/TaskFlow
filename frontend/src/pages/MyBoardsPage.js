@@ -88,8 +88,8 @@ function MyBoardsPage({ user, onLogout }) {
   };
 
   const filteredBoards = boards.filter(board =>
-    board.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    board.description.toLowerCase().includes(searchTerm.toLowerCase())
+    (board.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (board.description || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -187,7 +187,7 @@ function MyBoardsPage({ user, onLogout }) {
               filteredBoards.map(board => (
                 <div key={board._id} className="board-card">
                   <h3>{board.title}</h3>
-                  <p>{board.description}</p>
+                  <p>{board.description || 'No description yet.'}</p>
                   <div className="board-meta">
                     <span>Last updated: Today</span>
                   </div>
