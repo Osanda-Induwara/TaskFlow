@@ -22,8 +22,8 @@ function Sidebar({ user, onLogout, currentPage }) {
         Home
       </Link>
       <button
-        className={`sidebar-item ${currentPage === 'boards' ? 'active' : ''}`}
-        onClick={() => handleProtectedNavigation('/boards')}
+        className={`sidebar-item ${currentPage === 'my-boards' ? 'active' : ''}`}
+        onClick={() => handleProtectedNavigation('/my-boards')}
       >
         My Boards
       </button>

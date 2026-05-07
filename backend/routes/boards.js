@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 const Board = require('../models/Board');
 const authenticateToken = require('../middleware/auth');
@@ -22,13 +23,15 @@ router.post('/', authenticateToken, [
   }
 
   const { title, description } = req.body;
+  const isShared = req.body.isShared === true;
 
   try {
     const board = new Board({
       title,
       description,
       userId: req.user.userId,
-      members: []
+      members: [],
+      isShared
     });
 
     await board.save();
@@ -51,17 +54,23 @@ router.get('/', authenticateToken, async (req, res) => {
 
 router.get('/shared', authenticateToken, async (req, res) => {
   try {
+    if (!req.user || !req.user.userId || !mongoose.Types.ObjectId.isValid(req.user.userId)) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
     const boards = await Board.find({
-      userId: { $ne: req.user.userId },
+      userId: { $ne: userId },
       $or: [
-        { 'members.user': req.user.userId },
-        { members: req.user.userId }
+        { 'members.user': userId },
+        { members: userId }
       ]
     }).populate('userId', 'name email');
 
     res.json(boards);
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+    console.error('Shared boards error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 

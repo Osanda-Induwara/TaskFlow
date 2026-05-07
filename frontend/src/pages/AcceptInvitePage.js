@@ -40,7 +40,7 @@ function AcceptInvitePage({ user }) {
           headers: { Authorization: `Bearer ${tokenValue}` }
         }
       );
-      navigate(`/board/${response.data.boardId}`);
+      navigate(`/shared-boards/board/${response.data.boardId}`);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to accept invite');
     } finally {

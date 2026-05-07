@@ -22,7 +22,7 @@ function HomePage({ user, onLogout }) {
           {user ? (
             <>
               <span className="user-name">Welcome, {user.name}</span>
-              <button className="btn btn-secondary" onClick={() => navigate('/boards')}>
+              <button className="btn btn-secondary" onClick={() => navigate('/my-boards')}>
                 My Boards
               </button>
               <button className="btn btn-danger" onClick={handleLogout}>
@@ -49,7 +49,7 @@ function HomePage({ user, onLogout }) {
             <p>A beautiful and powerful task management system to help you stay on top of your projects and collaborate seamlessly with your team.</p>
             <div className="cta-buttons">
               {user ? (
-                <Link to="/boards" className="btn-lg btn-primary">
+                <Link to="/my-boards" className="btn-lg btn-primary">
                   Go to My Boards
                 </Link>
               ) : (

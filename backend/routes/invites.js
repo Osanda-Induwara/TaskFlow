@@ -81,6 +81,12 @@ router.post(
 
       await invite.save();
 
+      if (!board.isShared) {
+        board.isShared = true;
+        board.updatedAt = Date.now();
+        await board.save();
+      }
+
       const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const inviteLink = `${frontendBaseUrl}/accept-invite/${token}`;
 

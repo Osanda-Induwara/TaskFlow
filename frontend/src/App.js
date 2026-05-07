@@ -65,7 +65,7 @@ function App() {
           element={user ? <Navigate to="/" /> : <SignupPage onLogin={handleLogin} />} 
         />
         <Route 
-          path="/boards" 
+          path="/my-boards" 
           element={user ? <MyBoardsPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
         />
         <Route 
@@ -73,7 +73,11 @@ function App() {
           element={user ? <SharedBoardsPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
         />
         <Route 
-          path="/board/:id"
+          path="/my-boards/board/:id"
+          element={user ? <BoardPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+        />
+        <Route 
+          path="/shared-boards/board/:id"
           element={user ? <BoardPage user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
         />
         <Route

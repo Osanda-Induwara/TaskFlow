@@ -35,7 +35,7 @@ function SharedBoardsPage({ user, onLogout }) {
       const sharedBoards = Array.isArray(sharedResponse.data) ? sharedResponse.data : [];
 
       const ownedSharedBoards = ownedBoards
-        .filter((board) => board.members && board.members.length > 0)
+        .filter((board) => board.isShared)
         .map((board) => ({ ...board, _owned: true }));
 
       const sharedWithMeBoards = sharedBoards.map((board) => ({ ...board, _owned: false }));
@@ -63,7 +63,8 @@ function SharedBoardsPage({ user, onLogout }) {
         '/api/boards',
         {
           title: newBoardTitle,
-          description: newBoardDescription
+          description: newBoardDescription,
+          isShared: true
         },
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -290,7 +291,7 @@ function SharedBoardsPage({ user, onLogout }) {
                     )}
                     <button
                       className="btn btn-primary"
-                      onClick={() => navigate(`/board/${board._id}`)}
+                      onClick={() => navigate(`/shared-boards/board/${board._id}`)}
                     >
                       Open Board
                     </button>

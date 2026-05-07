@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { DndContext, PointerSensor, closestCenter, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -11,6 +11,7 @@ import '../styles/BoardPage.css';
 function BoardPage({ user, onLogout }) {
   const { id: boardId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [tasks, setTasks] = useState({ todo: [], ongoing: [], done: [] });
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -393,7 +394,11 @@ function BoardPage({ user, onLogout }) {
       </header>
 
       <div className="app-container">
-        <Sidebar user={user} onLogout={handleLogout} currentPage="boards" />
+        <Sidebar
+          user={user}
+          onLogout={handleLogout}
+          currentPage={location.pathname.startsWith('/shared-boards') ? 'shared-boards' : 'my-boards'}
+        />
 
         <div className="board-container">
           <div className="board-title-section">

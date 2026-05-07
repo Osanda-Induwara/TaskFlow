@@ -87,10 +87,12 @@ function MyBoardsPage({ user, onLogout }) {
     // Search is handled by filtering the displayed boards
   };
 
-  const filteredBoards = boards.filter(board =>
-    (board.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (board.description || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBoards = boards
+    .filter((board) => !board.isShared)
+    .filter(board =>
+      (board.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (board.description || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
   if (loading) {
     return <div className="loading">Loading boards...</div>;
@@ -128,7 +130,7 @@ function MyBoardsPage({ user, onLogout }) {
       </header>
 
       <div className="app-container">
-        <Sidebar user={user} onLogout={handleLogout} currentPage="boards" />
+        <Sidebar user={user} onLogout={handleLogout} currentPage="my-boards" />
         
         <div className="boards-container">
           <div className="boards-header">
@@ -181,7 +183,7 @@ function MyBoardsPage({ user, onLogout }) {
           <div className="boards-grid">
             {filteredBoards.length === 0 ? (
               <div className="no-boards">
-                <p>📋 {searchTerm ? 'No boards match your search.' : 'No boards yet. Create one to get started.'}</p>
+                <p>📋 {searchTerm ? 'No boards match your search.' : 'No private boards yet. Create one to get started.'}</p>
               </div>
             ) : (
               filteredBoards.map(board => (
@@ -194,7 +196,7 @@ function MyBoardsPage({ user, onLogout }) {
                   <div className="board-actions">
                     <button
                       className="btn btn-primary"
-                      onClick={() => navigate(`/board/${board._id}`)}
+                      onClick={() => navigate(`/my-boards/board/${board._id}`)}
                     >
                       Open Board
                     </button>

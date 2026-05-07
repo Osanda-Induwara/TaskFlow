@@ -23,7 +23,7 @@ function LoginPage({ onLogin }) {
 
       const { token, user } = response.data;
       onLogin(token, user);
-      navigate('/boards');
+      navigate('/my-boards');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
     } finally {
