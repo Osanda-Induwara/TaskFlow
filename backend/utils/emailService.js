@@ -2,23 +2,34 @@ const nodemailer = require('nodemailer');
 
 const smtpHost = process.env.EMAIL_HOST || 'smtp.sendgrid.net';
 const smtpPort = Number(process.env.EMAIL_PORT || 587);
-let transporterPromise;
+let primaryTransporterPromise;
+let fallbackTransporterPromise;
 
-const getTransporter = async () => {
-  if (!transporterPromise) {
-    transporterPromise = (async () => {
-      if (process.env.EMAIL_PASS) {
-        return nodemailer.createTransport({
-          host: smtpHost,
-          port: smtpPort,
-          secure: smtpPort === 465,
-          auth: {
-            user: process.env.EMAIL_USER || 'apikey',
-            pass: process.env.EMAIL_PASS
-          }
-        });
+const getPrimaryTransporter = async () => {
+  if (!primaryTransporterPromise) {
+    primaryTransporterPromise = (async () => {
+      if (!process.env.EMAIL_PASS) {
+        return null;
       }
 
+      return nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: {
+          user: process.env.EMAIL_USER || 'apikey',
+          pass: process.env.EMAIL_PASS
+        }
+      });
+    })();
+  }
+
+  return primaryTransporterPromise;
+};
+
+const getFallbackTransporter = async () => {
+  if (!fallbackTransporterPromise) {
+    fallbackTransporterPromise = (async () => {
       const testAccount = await nodemailer.createTestAccount();
       return nodemailer.createTransport({
         host: testAccount.smtp.host,
@@ -32,7 +43,7 @@ const getTransporter = async () => {
     })();
   }
 
-  return transporterPromise;
+  return fallbackTransporterPromise;
 };
 
 const fromName = process.env.EMAIL_FROM_NAME || 'TaskFlow Team';
@@ -51,15 +62,29 @@ const sendInviteEmail = async ({ to, inviteLink, boardTitle, inviterName, role }
     <p>If you did not expect this, you can ignore this email.</p>
   `;
 
-  const transporter = await getTransporter();
-  const info = await transporter.sendMail({
+  const primaryTransporter = await getPrimaryTransporter();
+  const mailOptions = {
     from: `${fromName} <${fromEmail}>`,
     to,
     subject,
     text,
     html
-  });
+  };
 
+  if (primaryTransporter) {
+    try {
+      const info = await primaryTransporter.sendMail(mailOptions);
+      return info;
+    } catch (error) {
+      if (error && error.code !== 'EAUTH') {
+        throw error;
+      }
+      console.warn('Primary email auth failed. Using test email transport.');
+    }
+  }
+
+  const fallbackTransporter = await getFallbackTransporter();
+  const info = await fallbackTransporter.sendMail(mailOptions);
   const previewUrl = nodemailer.getTestMessageUrl(info);
   if (previewUrl) {
     console.log(`Invite email preview: ${previewUrl}`);

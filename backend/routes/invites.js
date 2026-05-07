@@ -90,15 +90,21 @@ router.post(
       const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const inviteLink = `${frontendBaseUrl}/accept-invite/${token}`;
 
-      await sendInviteEmail({
-        to: normalizedEmail,
-        inviteLink,
-        boardTitle: board.title,
-        inviterName: board.userId.name || 'A teammate',
-        role: invite.role
-      });
+      let emailStatus = 'sent';
+      try {
+        await sendInviteEmail({
+          to: normalizedEmail,
+          inviteLink,
+          boardTitle: board.title,
+          inviterName: board.userId.name || 'A teammate',
+          role: invite.role
+        });
+      } catch (emailError) {
+        emailStatus = 'failed';
+        console.error('Invite email failed:', emailError);
+      }
 
-      res.status(201).json({ message: 'Invite sent', invite });
+      res.status(201).json({ message: 'Invite created', invite, emailStatus });
     } catch (error) {
       console.error('Error creating invite:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
