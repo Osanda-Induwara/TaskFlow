@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { DndContext, PointerSensor, closestCenter, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -19,7 +19,7 @@ function BoardPage({ user, onLogout }) {
   const [error, setError] = useState('');
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
-  const [ws, setWs] = useState(null);
+  const wsRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentRole, setCurrentRole] = useState('viewer');
   const sensors = useSensors(useSensor(PointerSensor));
@@ -31,13 +31,15 @@ function BoardPage({ user, onLogout }) {
     connectWebSocket();
 
     return () => {
-      if (ws) {
-        ws.close();
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
       }
     };
-  }, [boardId]);
+  }, [connectWebSocket, fetchBoard, fetchTasks]);
 
-  const connectWebSocket = () => {
+  const connectWebSocket = useCallback(() => {
+    if (!user?.id) return;
     const apiUrl = new URL(apiBaseUrl);
     const protocol = apiUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${apiUrl.host}`;
@@ -45,7 +47,6 @@ function BoardPage({ user, onLogout }) {
     const websocket = new WebSocket(wsUrl);
 
     websocket.onopen = () => {
-      const token = localStorage.getItem('token');
       websocket.send(JSON.stringify({
         type: 'JOIN_BOARD',
         boardId,
@@ -60,10 +61,10 @@ function BoardPage({ user, onLogout }) {
       }
     };
 
-    setWs(websocket);
-  };
+    wsRef.current = websocket;
+  }, [apiBaseUrl, boardId, user?.id]);
 
-  const fetchBoard = async () => {
+  const fetchBoard = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`/api/boards/${boardId}`, {
@@ -74,9 +75,9 @@ function BoardPage({ user, onLogout }) {
     } catch (err) {
       setError('Failed to fetch board');
     }
-  };
+  }, [boardId]);
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`/api/tasks/board/${boardId}`, {
@@ -98,7 +99,7 @@ function BoardPage({ user, onLogout }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [boardId]);
 
   const updateTasksFromMessage = (payload) => {
     const { taskId, newStatus } = payload;
@@ -187,8 +188,8 @@ function BoardPage({ user, onLogout }) {
         }
       );
 
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
           type: 'TASK_MOVED',
           boardId,
           payload: { taskId: activeId, newStatus: destStatus }
@@ -262,13 +263,6 @@ function BoardPage({ user, onLogout }) {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     // Search is handled by filtering the displayed tasks
-  };
-
-  const filterTasksBySearch = (taskList) => {
-    return taskList.filter(task =>
-      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
   };
 
   const stopPropagation = (event) => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/MyBoardsPage.css';
@@ -11,11 +11,7 @@ function AcceptInvitePage({ user }) {
   const [error, setError] = useState('');
   const [accepting, setAccepting] = useState(false);
 
-  useEffect(() => {
-    fetchInvite();
-  }, [token]);
-
-  const fetchInvite = async () => {
+  const fetchInvite = useCallback(async () => {
     try {
       const response = await axios.get(`/api/invites/${token}`);
       setInvite(response.data);
@@ -25,7 +21,11 @@ function AcceptInvitePage({ user }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    fetchInvite();
+  }, [fetchInvite]);
 
   const handleAccept = async () => {
     if (!user) return;
