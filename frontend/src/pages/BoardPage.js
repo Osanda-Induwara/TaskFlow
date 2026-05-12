@@ -25,19 +25,6 @@ function BoardPage({ user, onLogout }) {
   const sensors = useSensors(useSensor(PointerSensor));
   const statuses = useMemo(() => ['todo', 'ongoing', 'done'], []);
 
-  useEffect(() => {
-    fetchBoard();
-    fetchTasks();
-    connectWebSocket();
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-    };
-  }, [connectWebSocket, fetchBoard, fetchTasks]);
-
   const connectWebSocket = useCallback(() => {
     if (!user?.id) return;
     const apiUrl = new URL(apiBaseUrl);
@@ -100,6 +87,19 @@ function BoardPage({ user, onLogout }) {
       setLoading(false);
     }
   }, [boardId]);
+
+  useEffect(() => {
+    fetchBoard();
+    fetchTasks();
+    connectWebSocket();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
+  }, [connectWebSocket, fetchBoard, fetchTasks]);
 
   const updateTasksFromMessage = (payload) => {
     const { taskId, newStatus } = payload;
