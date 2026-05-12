@@ -12,7 +12,7 @@ function BoardPage({ user, onLogout }) {
   const { id: boardId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const apiBaseUrl = process.env.REACT_APP_API_URL || 'https://taskflow-production-1d8a.up.railway.app';
   const [tasks, setTasks] = useState({ todo: [], ongoing: [], done: [] });
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
