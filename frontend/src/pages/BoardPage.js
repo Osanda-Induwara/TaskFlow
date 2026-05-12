@@ -12,6 +12,7 @@ function BoardPage({ user, onLogout }) {
   const { id: boardId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
   const [tasks, setTasks] = useState({ todo: [], ongoing: [], done: [] });
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -37,8 +38,9 @@ function BoardPage({ user, onLogout }) {
   }, [boardId]);
 
   const connectWebSocket = () => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//localhost:5000`;
+    const apiUrl = new URL(apiBaseUrl);
+    const protocol = apiUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${apiUrl.host}`;
     
     const websocket = new WebSocket(wsUrl);
 
