@@ -5,21 +5,24 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js --poll"
   },
-  "keywords": ["task", "management"],
+  "keywords": [
+    "task",
+    "management"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "ws": "^8.13.0",
-    "jsonwebtoken": "^9.0.0",
     "bcryptjs": "^2.4.3",
-    "mongoose": "^7.5.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "express-validator": "^7.0.0",
-    "nodemailer": "^6.9.16"
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.5.0",
+    "nodemailer": "^8.0.7",
+    "ws": "^8.13.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
