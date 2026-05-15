@@ -6,6 +6,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_FROM_ADDRESS, // taskflow.ad@gmail.com
     pass: process.env.EMAIL_APP_PASSWORD,  // Gmail App Password
   },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
 // top of emailService.js
@@ -15,6 +18,23 @@ console.log('Email config:', {
 });
 
 const fromName = process.env.EMAIL_FROM_NAME || 'TaskFlow Team';
+const emailSendTimeoutMs = Number(process.env.EMAIL_SEND_TIMEOUT_MS) || 8000;
+
+const withTimeout = (promise, timeoutMs) => new Promise((resolve, reject) => {
+  const timer = setTimeout(() => {
+    reject(new Error('Email send timeout'));
+  }, timeoutMs);
+
+  promise
+    .then((result) => {
+      clearTimeout(timer);
+      resolve(result);
+    })
+    .catch((error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+});
 
 const sendInviteEmail = async ({ to, inviteLink, boardTitle, inviterName, role }) => {
   const subject = `${inviterName} invited you to a TaskFlow board`;
@@ -27,12 +47,12 @@ const sendInviteEmail = async ({ to, inviteLink, boardTitle, inviterName, role }
   `;
 
   try {
-    const result = await transporter.sendMail({
+    const result = await withTimeout(transporter.sendMail({
       from: `${fromName} <${process.env.EMAIL_FROM_ADDRESS}>`,
       to,
       subject,
       html,
-    });
+    }), emailSendTimeoutMs);
 
     console.log('Email sent:', result.messageId);
     return result;
