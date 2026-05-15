@@ -1,23 +1,10 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_FROM_ADDRESS, // taskflow.ad@gmail.com
-    pass: process.env.EMAIL_APP_PASSWORD,  // Gmail App Password
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-});
-
-// top of emailService.js
-console.log('Email config:', {
-  user: process.env.EMAIL_FROM_ADDRESS,
-  passLength: process.env.EMAIL_APP_PASSWORD?.length
-});
+const resendApiKey = process.env.RESEND_API_KEY;
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 const fromName = process.env.EMAIL_FROM_NAME || 'TaskFlow Team';
+const fromAddress = process.env.RESEND_FROM_ADDRESS || process.env.EMAIL_FROM_ADDRESS;
 const emailSendTimeoutMs = Number(process.env.EMAIL_SEND_TIMEOUT_MS) || 8000;
 
 const withTimeout = (promise, timeoutMs) => new Promise((resolve, reject) => {
@@ -46,15 +33,22 @@ const sendInviteEmail = async ({ to, inviteLink, boardTitle, inviterName, role }
     <p>If you did not expect this, you can ignore this email.</p>
   `;
 
+  if (!resend) {
+    throw new Error('RESEND_API_KEY is not set');
+  }
+
+  if (!fromAddress) {
+    throw new Error('RESEND_FROM_ADDRESS or EMAIL_FROM_ADDRESS must be set');
+  }
+
   try {
-    const result = await withTimeout(transporter.sendMail({
-      from: `${fromName} <${process.env.EMAIL_FROM_ADDRESS}>`,
+    const result = await withTimeout(resend.emails.send({
+      from: `${fromName} <${fromAddress}>`,
       to,
       subject,
       html,
     }), emailSendTimeoutMs);
 
-    console.log('Email sent:', result.messageId);
     return result;
   } catch (error) {
     console.error('Email sending failed:', error);
