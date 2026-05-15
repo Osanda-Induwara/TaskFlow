@@ -87,8 +87,11 @@ router.post(
         await board.save();
       }
 
-      const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      const inviteLink = `${frontendBaseUrl}/accept-invite/${token}`;
+      const frontendBaseUrl = (process.env.FRONTEND_URL || 'https://task-flow-lem.vercel.app')
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean)[0] || 'https://task-flow-lem.vercel.app';
+      const inviteLink = `${frontendBaseUrl.replace(/\/$/, '')}/accept-invite/${token}`;
 
       let emailStatus = 'sent';
       try {
